@@ -21,6 +21,24 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findAllByOwnerIdOrderByStartDateAscDueTimeAscTitleAsc(Long ownerId);
 
     /**
+     * Azok a teendők, amelyeknek lehet előfordulása a [from, to] időszakban:
+     * nem kezdődnek a "to" után, és nem érnek véget a "from" előtt.
+     * Egyszeri teendőnél az end_date null, ezért ide bekerülhet egy korábbi is –
+     * a pontos napokat a Task.isDueOn() dönti el.
+     */
+    @EntityGraph(attributePaths = "category")
+    @Query("""
+            SELECT t FROM Task t
+            WHERE t.owner.id = :userId
+              AND t.startDate <= :to
+              AND (t.repeatIntervalDays IS NOT NULL OR t.startDate >= :from)
+              AND (t.endDate IS NULL OR t.endDate >= :from)
+            """)
+    List<Task> findCandidatesInRange(@Param("userId") Long userId,
+                                     @Param("from") LocalDate from,
+                                     @Param("to") LocalDate to);
+
+    /**
      * Egy felhasználó adott napi, még el nem végzett teendői.
      * PostgreSQL-ben két DATE kivonása egész számot (napok) ad.
      */
