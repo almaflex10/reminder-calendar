@@ -1,0 +1,280 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.progress-slot {
+  height: 4px;
+  margin-bottom: 8px;
+}
+
+// ===================== Havi naptár =====================
+
+.month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+
+  h1 {
+    font: var(--mat-sys-headline-small);
+    margin: 0;
+  }
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.weekday {
+  text-align: center;
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-on-surface-variant);
+  padding: 4px 0 8px;
+}
+
+.cell {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  aspect-ratio: 1 / 0.85;
+  min-height: 52px;
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--mat-sys-surface-container-low);
+  border: 1px solid transparent;
+  transition: background-color 120ms, border-color 120ms;
+
+  &:hover {
+    background: var(--mat-sys-surface-container-high);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mat-sys-primary);
+    outline-offset: 2px;
+  }
+
+  &.other-month {
+    background: transparent;
+    .day-number {
+      color: var(--mat-sys-outline);
+    }
+  }
+
+  &.today .day-number {
+    background: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
+  }
+
+  &.selected {
+    border-color: var(--mat-sys-primary);
+    background: var(--mat-sys-primary-container);
+  }
+
+  &.overdue .open-count {
+    background: var(--mat-sys-error);
+    color: var(--mat-sys-on-error);
+  }
+}
+
+.day-number {
+  font: var(--mat-sys-label-large);
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  margin: -4px 0 0 -4px;
+}
+
+.cell-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.dots {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  min-width: 0;
+
+  .color-dot {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+.open-count {
+  font: var(--mat-sys-label-small);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.done-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--mat-sys-tertiary);
+}
+
+@media (max-width: 520px) {
+  .grid {
+    gap: 2px;
+  }
+  .cell {
+    padding: 4px;
+    border-radius: 8px;
+    min-height: 44px;
+  }
+  .dots {
+    display: none;
+  }
+  .day-number {
+    margin: 0;
+  }
+}
+
+// ===================== A kiválasztott nap =====================
+
+.day {
+  background: var(--mat-sys-surface-container-low);
+  border-radius: 16px;
+  padding: 20px;
+  position: sticky;
+  top: 88px;
+}
+
+@media (max-width: 900px) {
+  .day {
+    position: static;
+    scroll-margin-top: 72px; // a felső sáv ne takarja ki
+  }
+}
+
+.day-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+
+  h2 {
+    font: var(--mat-sys-title-large);
+    margin: 0;
+  }
+}
+
+.weekday-name {
+  margin: 2px 0 0;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.day-progress {
+  margin: 12px 0 0;
+  font: var(--mat-sys-label-large);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 4px 4px 4px 0;
+  border-radius: 12px;
+  background: var(--mat-sys-surface);
+  border-left: 4px solid var(--cat-color);
+
+  &:hover .edit {
+    opacity: 1;
+  }
+}
+
+.task-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+}
+
+.task-title {
+  font: var(--mat-sys-body-large);
+  overflow-wrap: anywhere;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--mat-sys-on-surface-variant);
+  font: var(--mat-sys-body-small);
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.task-desc {
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+  white-space: pre-line;
+  margin-top: 2px;
+}
+
+.edit {
+  opacity: 0.5;
+  transition: opacity 120ms;
+}
+
+@media (hover: none) {
+  .edit {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,138 @@
+<div class="page layout">
+  <!-- ===================== Havi naptár ===================== -->
+  <section class="month" aria-label="Havi naptár">
+    <header class="month-header">
+      <h1>{{ month() | date: 'y. MMMM' }}</h1>
+      <div class="month-nav">
+        @if (!showingToday()) {
+          <button mat-stroked-button (click)="goToday()">Ma</button>
+        }
+        <button mat-icon-button (click)="prevMonth()" aria-label="Előző hónap" matTooltip="Előző hónap">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button mat-icon-button (click)="nextMonth()" aria-label="Következő hónap" matTooltip="Következő hónap">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </header>
+
+    <div class="progress-slot">
+      @if (loadingMonth()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+    </div>
+
+    <div class="grid" role="grid">
+      @for (w of weekdays; track w) {
+        <div class="weekday" role="columnheader">{{ w }}</div>
+      }
+
+      @for (cell of cells(); track cell.iso) {
+        @let s = summaries().get(cell.iso);
+        <button
+          class="cell"
+          role="gridcell"
+          [class.other-month]="!cell.inMonth"
+          [class.today]="cell.isToday"
+          [class.selected]="cell.iso === selectedIso()"
+          [class.overdue]="cell.isPast && (s?.open ?? 0) > 0"
+          [class.all-done]="s && s.total > 0 && s.open === 0"
+          [attr.aria-label]="(cell.date | date: 'MMMM d.') + (s?.open ? ', ' + s.open + ' nyitott teendő' : '')"
+          [attr.aria-selected]="cell.iso === selectedIso()"
+          (click)="select(cell.date); revealDay(dayPanel)"
+        >
+          <span class="day-number">{{ cell.date.getDate() }}</span>
+
+          @if (s && s.total > 0) {
+            <span class="cell-info">
+              @if (s.open > 0) {
+                <span class="dots">
+                  @for (c of s.colors.slice(0, 4); track c) {
+                    <span class="color-dot" [style.background]="c"></span>
+                  }
+                </span>
+                <span class="open-count">{{ s.open }}</span>
+              } @else {
+                <mat-icon class="done-icon">check</mat-icon>
+              }
+            </span>
+          }
+        </button>
+      }
+    </div>
+  </section>
+
+  <!-- ===================== A kiválasztott nap ===================== -->
+  <section class="day" aria-live="polite" #dayPanel>
+    <header class="day-header">
+      <div>
+        <h2>{{ selected() | date: 'MMMM d.' }}</h2>
+        <p class="weekday-name">{{ selected() | date: 'EEEE' }}</p>
+      </div>
+      <button mat-flat-button (click)="newTask()">
+        <mat-icon>add</mat-icon>
+        Új teendő
+      </button>
+    </header>
+
+    @if (selectedSummary(); as s) {
+      @if (s.total > 0) {
+        <p class="day-progress">{{ s.completed }} / {{ s.total }} kész</p>
+      }
+    }
+
+    <div class="progress-slot">
+      @if (loadingDay()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+    </div>
+
+    @if (dayTasks().length > 0) {
+      <ul class="task-list">
+        @for (task of dayTasks(); track task.id) {
+          <li class="task" [style.--cat-color]="task.categoryColor ?? 'var(--mat-sys-outline-variant)'">
+            <mat-checkbox
+              [checked]="busy().has(task.id)"
+              [disabled]="busy().has(task.id)"
+              (change)="complete(task)"
+              [aria-label]="task.title + ' kipipálása'"
+            />
+            <div class="task-body">
+              <span class="task-title">{{ task.title }}</span>
+              <span class="task-meta">
+                @if (task.dueTime) {
+                  <span class="meta-item"><mat-icon>schedule</mat-icon>{{ shortTime(task.dueTime) }}</span>
+                }
+                @if (task.repeatIntervalDays) {
+                  <span class="meta-item"><mat-icon>repeat</mat-icon>{{ repeatLabel(task.repeatIntervalDays) }}</span>
+                }
+                @if (task.categoryName) {
+                  <span class="meta-item">
+                    <span class="color-dot" [style.background]="task.categoryColor"></span>{{ task.categoryName }}
+                  </span>
+                }
+              </span>
+              @if (task.description) {
+                <span class="task-desc">{{ task.description }}</span>
+              }
+            </div>
+            <button mat-icon-button class="edit" (click)="edit(task)" aria-label="Szerkesztés" matTooltip="Szerkesztés">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </li>
+        }
+      </ul>
+    } @else if (!loadingDay()) {
+      <div class="empty-state">
+        @if (selectedSummary()?.total) {
+          <mat-icon>task_alt</mat-icon>
+          <p>Mindennel megvagy erre a napra.</p>
+        } @else {
+          <mat-icon>event_available</mat-icon>
+          <p>Erre a napra nincs teendő.</p>
+          <button mat-stroked-button (click)="newTask()">Teendő hozzáadása</button>
+        }
+      </div>
+    }
+  </section>
+</div>
