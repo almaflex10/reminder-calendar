@@ -1,6 +1,6 @@
 package reminder.calendar.repo;
 
-
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,7 +13,12 @@ import java.util.Optional;
 public interface TaskRepository extends JpaRepository<Task, Long> {
 
     /** Mindig ezt használd findById helyett: más felhasználó teendőjét nem adja vissza. */
+    @EntityGraph(attributePaths = "category")
     Optional<Task> findByIdAndOwnerId(Long id, Long ownerId);
+
+    /** Egy felhasználó összes teendője (a kategóriával együtt, egy lekérdezésben). */
+    @EntityGraph(attributePaths = "category")
+    List<Task> findAllByOwnerIdOrderByStartDateAscDueTimeAscTitleAsc(Long ownerId);
 
     /**
      * Egy felhasználó adott napi, még el nem végzett teendői.
