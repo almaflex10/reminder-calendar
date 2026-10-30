@@ -14,7 +14,7 @@ import {
   isSameDay,
   isRecurring,
   repeatLabel,
-  shortTime,
+  timeRange,
   startOfMonth,
   toIsoDate,
   today,
@@ -46,7 +46,7 @@ export class CalendarPage implements OnInit {
 
   protected readonly weekdays = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
   protected readonly repeatLabel = repeatLabel;
-  protected readonly shortTime = shortTime;
+  protected readonly timeRange = timeRange;
   protected readonly isRecurring = isRecurring;
 
   /** A megjelenített hónap első napja. */

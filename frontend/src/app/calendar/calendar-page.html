@@ -101,7 +101,7 @@
               <span class="task-title">{{ task.title }}</span>
               <span class="task-meta">
                 @if (task.dueTime) {
-                  <span class="meta-item"><mat-icon>schedule</mat-icon>{{ shortTime(task.dueTime) }}</span>
+                  <span class="meta-item"><mat-icon>schedule</mat-icon>{{ timeRange(task.dueTime, task.endTime) }}</span>
                 }
                 @if (isRecurring(task)) {
                   <span class="meta-item"><mat-icon>repeat</mat-icon>{{ repeatLabel(task.repeatIntervalDays, task.repeatWeekdays) }}</span>

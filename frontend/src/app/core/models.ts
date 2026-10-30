@@ -39,6 +39,7 @@ export interface DayTask {
   categoryName: string | null;
   categoryColor: string | null;
   repeatWeekdays: number | null;
+  endTime: string | null;
 }
 
 /** Egy teendő minden adata (GET /api/tasks/all, /api/tasks/{id}). */
@@ -52,6 +53,7 @@ export interface TaskDetail {
   repeatIntervalDays: number | null;
   endDate: string | null;
   repeatWeekdays: number | null;
+  endTime: string | null;
 }
 
 export interface TaskRequest {
@@ -63,6 +65,7 @@ export interface TaskRequest {
   repeatIntervalDays: number | null;
   endDate: string | null;
   repeatWeekdays: number | null;
+  endTime: string | null;
 }
 
 /** Egy nap összesítése a naptárhoz (GET /api/calendar). */

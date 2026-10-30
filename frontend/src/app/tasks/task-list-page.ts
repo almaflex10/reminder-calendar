@@ -8,7 +8,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TaskApi } from '../core/api.services';
-import { parseIsoDate, repeatLabel, shortTime, today, isRecurring } from '../core/date-utils';
+import { parseIsoDate, repeatLabel, timeRange, today, isRecurring } from '../core/date-utils';
 import { errorMessage } from '../core/error-message';
 import { TaskDetail } from '../core/models';
 import { confirm } from '../shared/confirm-dialog';
@@ -58,8 +58,7 @@ type Filter = 'all' | 'recurring' | 'once';
                     }
                   </span>
                   @if (t.dueTime) {
-                    <span class="meta-item"><mat-icon>schedule</mat-icon>{{ shortTime(t.dueTime) }}</span>
-                  }
+                      <span class="meta-item"><mat-icon>schedule</mat-icon>{{ timeRange(t.dueTime, t.endTime) }}</span>                  }
                   @if (t.category) {
                     <span class="meta-item"><span class="color-dot" [style.background]="t.category.color"></span>{{ t.category.name }}</span>
                   }
@@ -147,7 +146,7 @@ export class TaskListPage implements OnInit {
 
   protected readonly repeatLabel = repeatLabel;
   protected readonly isRecurring = isRecurring;
-  protected readonly shortTime = shortTime;
+  protected readonly timeRange = timeRange;
 
   readonly tasks = signal<TaskDetail[]>([]);
   readonly loading = signal(false);

@@ -112,22 +112,30 @@ type RepeatMode = 'once' | '1' | '2' | 'custom' | 'weekdays' | 'weekend' | 'days
             }
           </div>
         }
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ isRecurring() ? 'Első nap' : 'Nap' }}</mat-label>
+          <input matInput [matDatepicker]="startPicker" formControlName="startDate" />
+          <mat-datepicker-toggle matIconSuffix [for]="startPicker" />
+          <mat-datepicker #startPicker />
+          @if (form.controls.startDate.invalid) {
+            <mat-error>Adj meg egy dátumot</mat-error>
+          }
+        </mat-form-field>
+
         <div class="row">
           <mat-form-field appearance="outline">
-            <mat-label>{{ isRecurring() ? 'Első nap' : 'Nap' }}</mat-label>
-            <input matInput [matDatepicker]="startPicker" formControlName="startDate" />
-            <mat-datepicker-toggle matIconSuffix [for]="startPicker" />
-            <mat-datepicker #startPicker />
-            @if (form.controls.startDate.invalid) {
-              <mat-error>Adj meg egy dátumot</mat-error>
-            }
+            <mat-label>Ettől (nem kötelező)</mat-label>
+            <input matInput type="time" formControlName="dueTime" (input)="timeError.set(null)" />
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Időpont (nem kötelező)</mat-label>
-            <input matInput type="time" formControlName="dueTime" />
+            <mat-label>Eddig (nem kötelező)</mat-label>
+            <input matInput type="time" formControlName="endTime" (input)="timeError.set(null)" />
           </mat-form-field>
         </div>
+        @if (timeError()) {
+          <p class="form-error time-error">{{ timeError() }}</p>
+        }
 
         @if (isRecurring()) {
           <mat-form-field appearance="outline" class="full-width">
@@ -187,6 +195,9 @@ type RepeatMode = 'once' | '1' | '2' | 'custom' | 'weekdays' | 'weekend' | 'days
         flex-direction: column;
         gap: 0;
       }
+     .time-error {
+        margin-top: -8px;
+      }
     }
     .weekday-picker { margin: -4px 0 16px; }
     .weekday-picker mat-button-toggle-group { width: 100%; }
@@ -214,6 +225,7 @@ export class TaskDialog implements OnInit {
     days: this.fb.nonNullable.control<number[]>([]),
     startDate: this.fb.control<Date | null>(null, Validators.required),
     dueTime: this.fb.nonNullable.control(''),
+    endTime: this.fb.nonNullable.control(''),
     endDate: this.fb.control<Date | null>(null),
     description: this.fb.nonNullable.control(''),
   });
@@ -224,6 +236,7 @@ export class TaskDialog implements OnInit {
   readonly isRecurring = computed(() => this.repeat() !== 'once');
   readonly dayNames = DAY_NAMES_SHORT;
   readonly daysError = signal(false);
+  readonly timeError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.categoryApi.list().subscribe((list) => this.categories.set(list));
@@ -240,6 +253,7 @@ export class TaskDialog implements OnInit {
         days: mask !== null ? maskToDays(mask) : [],
         startDate: parseIsoDate(t.startDate),
         dueTime: shortTime(t.dueTime) ?? '',
+        endTime: shortTime(t.endTime) ?? '',
         endDate: t.endDate ? parseIsoDate(t.endDate) : null,
         description: t.description ?? '',
       });
@@ -258,7 +272,13 @@ export class TaskDialog implements OnInit {
       return;
     }
     this.daysError.set(v.repeat === 'days' && v.days.length === 0);
-    if (invalid || this.daysError()) {
+    // "HH:mm" szövegek – így egyszerűen összehasonlíthatók
+    this.timeError.set(
+      v.endTime && !v.dueTime ? 'A befejezéshez add meg a kezdést is.'
+      : v.endTime && v.endTime <= v.dueTime ? 'A befejezés a kezdés után legyen.'
+      : null,
+    );
+    if (invalid || this.daysError() || this.timeError()) {
       this.form.markAllAsTouched();
       return;
     }
@@ -277,6 +297,7 @@ export class TaskDialog implements OnInit {
       categoryId: v.categoryId,
       startDate: toIsoDate(v.startDate!),
       dueTime: v.dueTime || null,
+      endTime: v.endTime || null,
       repeatIntervalDays,
       repeatWeekdays,
       endDate: recurring && v.endDate ? toIsoDate(v.endDate) : null,
