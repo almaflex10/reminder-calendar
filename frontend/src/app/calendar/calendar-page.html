@@ -103,8 +103,8 @@
                 @if (task.dueTime) {
                   <span class="meta-item"><mat-icon>schedule</mat-icon>{{ shortTime(task.dueTime) }}</span>
                 }
-                @if (task.repeatIntervalDays) {
-                  <span class="meta-item"><mat-icon>repeat</mat-icon>{{ repeatLabel(task.repeatIntervalDays) }}</span>
+                @if (isRecurring(task)) {
+                  <span class="meta-item"><mat-icon>repeat</mat-icon>{{ repeatLabel(task.repeatIntervalDays, task.repeatWeekdays) }}</span>
                 }
                 @if (task.categoryName) {
                   <span class="meta-item">

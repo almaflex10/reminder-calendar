@@ -1,6 +1,9 @@
 // Dátumkezelés helyi idő szerint. A toISOString() UTC-re vált, ami éjfél körül
 // rossz napot adna – ezért itt mindent kézzel, a helyi dátumból számolunk.
-
+export const WEEKDAYS_MASK = 0b0011111; // H–P
+export const WEEKEND_MASK = 0b1100000; // Szo–V
+export const ALL_DAYS_MASK = 0b1111111;
+export const DAY_NAMES_SHORT = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
 export function toIsoDate(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -44,7 +47,28 @@ export function shortTime(t: string | null): string | null {
   return t ? t.slice(0, 5) : null;
 }
 
-export function repeatLabel(days: number | null): string {
+/** [0, 2, 4] (H, Sze, P) -> 21 */
+export function daysToMask(days: number[]): number {
+  return days.reduce((mask, d) => mask | (1 << d), 0);
+}
+
+/** 21 -> [0, 2, 4] */
+export function maskToDays(mask: number): number[] {
+  return [0, 1, 2, 3, 4, 5, 6].filter((d) => mask & (1 << d));
+}
+
+export function isRecurring(t: { repeatIntervalDays: number | null; repeatWeekdays: number | null }): boolean {
+  return t.repeatIntervalDays !== null || t.repeatWeekdays !== null;
+}
+
+/** "Naponta", "Kétnaponta", "3 naponta", "Hétköznap", "Hétvégén", "H, Sze, P" */
+export function repeatLabel(days: number | null, weekdays: number | null = null): string {
+  if (weekdays !== null) {
+    if (weekdays === WEEKDAYS_MASK) return 'Hétköznap';
+    if (weekdays === WEEKEND_MASK) return 'Hétvégén';
+    if (weekdays === ALL_DAYS_MASK) return 'Minden nap';
+    return maskToDays(weekdays).map((d) => DAY_NAMES_SHORT[d]).join(', ');
+  }
   switch (days) {
     case null:
       return 'Egyszeri';
