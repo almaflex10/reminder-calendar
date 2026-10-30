@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: remindcalendar
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+  # ---------- E-mail küldés ----------
+  # Fejlesztéshez Mailpit: docker run -p 1025:1025 -p 8025:8025 axllent/mailpit
+  # A levelek a http://localhost:8025 címen láthatók, valódi e-mail nem megy ki.
+  mail:
+    host: localhost
+    port: 1025
+    # Gmail-lel (alkalmazásjelszó kell, nem a sima jelszó):
+    # host: smtp.gmail.com
+    # port: 587
+    # username: sajat@gmail.com
+    # password: ${MAIL_PASSWORD}
+    # properties:
+    #   mail.smtp.auth: true
+    #   mail.smtp.starttls.enable: true
+
+server:
+  error:
+    include-message: always
+
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET}
+    validity-hours: 24
+
+  # ---------- Frontend / e-mail megerősítés ----------
+  frontend-url: http://localhost:4200
+  # Most a backend végpontjára mutat; az Angular után: http://localhost:4200/verify
+  verification-url: http://localhost:8080/api/auth/verify
+  verification-token-validity-hours: 24
+
+  mail:
+    from: noreply@reminder.local   # Gmail esetén: sajat@gmail.com
