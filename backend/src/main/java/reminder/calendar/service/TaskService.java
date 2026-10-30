@@ -129,7 +129,16 @@ public class TaskService {
         task.setTitle(req.title().trim());
         task.setDescription(req.description() == null || req.description().isBlank() ? null : req.description().trim());
         task.setStartDate(req.startDate());
+        if (req.endTime() != null) {
+            if (req.dueTime() == null) {
+                throw new BadRequestException("A befejezéshez kezdési időpontot is meg kell adni.");
+            }
+            if (!req.endTime().isAfter(req.dueTime())) {
+                throw new BadRequestException("A befejezés a kezdés után legyen.");
+            }
+        }
         task.setDueTime(req.dueTime());
+        task.setEndTime(req.endTime());
         task.setRepeatIntervalDays(req.repeatIntervalDays());
         task.setRepeatWeekdays(req.repeatWeekdays());
         // egyszeri teendőnél a végdátumnak nincs értelme

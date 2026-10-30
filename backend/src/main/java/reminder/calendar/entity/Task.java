@@ -71,6 +71,11 @@ public class Task {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    /** Opcionális befejezési időpont, pl. 12:00 – csak kezdési időponttal együtt. */
+    @Setter
+    @Column(name = "end_time")
+    private LocalTime endTime;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

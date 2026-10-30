@@ -19,7 +19,8 @@ public record TaskResponse(
         Long categoryId,
         String categoryName,
         String categoryColor,
-        Integer repeatWeekdays
+        Integer repeatWeekdays,
+        LocalTime endTime
 ) {
     public static TaskResponse of(Task task, LocalDate date) {
         Category c = task.getCategory();
@@ -33,7 +34,8 @@ public record TaskResponse(
                 c != null ? c.getId() : null,
                 c != null ? c.getName() : null,
                 c != null ? c.getColor() : null,
-                task.getRepeatWeekdays()
+                task.getRepeatWeekdays(),
+                task.getEndTime()
         );
     }
 }

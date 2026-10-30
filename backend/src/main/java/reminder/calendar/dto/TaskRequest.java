@@ -28,6 +28,7 @@ public record TaskRequest(
         LocalTime dueTime,
         @Min(1) @Max(365) Integer repeatIntervalDays,
         @Min(value = 1, message = "Legalább egy napot ki kell választani.") @Max(127) Integer repeatWeekdays,
+        LocalTime endTime,
         LocalDate endDate
 ) {
 }
