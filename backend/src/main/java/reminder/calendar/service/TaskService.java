@@ -14,6 +14,9 @@ import reminder.calendar.exception.NotFoundException;
 import reminder.calendar.repo.TaskCompletionRepository;
 import reminder.calendar.repo.TaskRepository;
 import reminder.calendar.repo.UserRepository;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,10 +32,16 @@ public class TaskService {
 
     // ===================== Lekérdezés =====================
 
-    /** Az adott nap még el nem végzett teendői. */
+    /** Az adott nap még el nem végzett teendői, időpont szerint (az időpont nélküliek a végén). */
     @Transactional(readOnly = true)
     public List<TaskResponse> getOpenTasks(Long userId, LocalDate day) {
-        return taskRepository.findOpenTasksForDay(userId, day).stream()
+        Set<TaskCompletionId> done = new HashSet<>(completionRepository.findIdsInRange(userId, day, day));
+
+        return taskRepository.findCandidatesInRange(userId, day, day).stream()
+                .filter(task -> task.isDueOn(day))
+                .filter(task -> !done.contains(new TaskCompletionId(task.getId(), day)))
+                .sorted(Comparator.comparing(Task::getDueTime, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Task::getTitle, String.CASE_INSENSITIVE_ORDER))
                 .map(task -> TaskResponse.of(task, day))
                 .toList();
     }
@@ -108,7 +117,10 @@ public class TaskService {
 
     /** A kérés adatait átmásolja a teendőre, ellenőrzésekkel. */
     private void apply(Task task, TaskRequest req, Long userId) {
-        boolean recurring = req.repeatIntervalDays() != null;
+        if (req.repeatIntervalDays() != null && req.repeatWeekdays() != null) {
+            throw new BadRequestException("Egyszerre csak egyféle ismétlődést lehet megadni.");
+        }
+        boolean recurring = req.repeatIntervalDays() != null || req.repeatWeekdays() != null;
 
         if (recurring && req.endDate() != null && req.endDate().isBefore(req.startDate())) {
             throw new BadRequestException("Az ismétlés vége nem lehet a kezdőnap előtt.");
@@ -119,6 +131,7 @@ public class TaskService {
         task.setStartDate(req.startDate());
         task.setDueTime(req.dueTime());
         task.setRepeatIntervalDays(req.repeatIntervalDays());
+        task.setRepeatWeekdays(req.repeatWeekdays());
         // egyszeri teendőnél a végdátumnak nincs értelme
         task.setEndDate(recurring ? req.endDate() : null);
         task.setCategory(req.categoryId() == null ? null : categoryService.getOwned(userId, req.categoryId()));

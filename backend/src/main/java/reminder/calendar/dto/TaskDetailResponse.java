@@ -14,7 +14,8 @@ public record TaskDetailResponse(
         LocalDate startDate,
         LocalTime dueTime,
         Integer repeatIntervalDays,
-        LocalDate endDate
+        LocalDate endDate,
+        Integer repeatWeekdays
 ) {
     public static TaskDetailResponse of(Task t) {
         return new TaskDetailResponse(
@@ -25,7 +26,8 @@ public record TaskDetailResponse(
                 t.getStartDate(),
                 t.getDueTime(),
                 t.getRepeatIntervalDays(),
-                t.getEndDate()
+                t.getEndDate(),
+                t.getRepeatWeekdays()
         );
     }
 }

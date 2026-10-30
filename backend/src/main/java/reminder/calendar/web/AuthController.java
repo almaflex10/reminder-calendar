@@ -22,11 +22,9 @@ public class AuthController {
         return new MessageResponse("Sikeres regisztráció. Elküldtük a megerősítő e-mailt.");
     }
 
-    /** GET /api/auth/verify?token=... – ide mutat az e-mailben kapott link. */
     @GetMapping("/verify")
-    public MessageResponse verify(@RequestParam String token) {
-        authService.verifyEmail(token);
-        return new MessageResponse("Az e-mail címed megerősítve. Most már bejelentkezhetsz.");
+    public AuthResponse verify(@RequestParam String token) {
+        return authService.verifyEmail(token);
     }
 
     /** POST /api/auth/resend-verification – {"email"} */

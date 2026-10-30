@@ -56,7 +56,7 @@ public class AuthService {
 
     /** A linkre kattintva aktiválja a fiókot. */
     @Transactional
-    public void verifyEmail(String token) {
+    public AuthResponse verifyEmail(String token) {
         VerificationToken vt = tokenRepository.findByToken(token)
                 .orElseThrow(() -> new BadRequestException("Érvénytelen vagy már felhasznált megerősítő link."));
 
@@ -67,6 +67,10 @@ public class AuthService {
         User user = vt.getUser();
         user.setEnabled(true);
         tokenRepository.deleteAllByUserId(user.getId());
+        return new AuthResponse(
+                jwtService.generateToken(user.getUsername()),
+                user.getUsername(),
+                jwtService.getValiditySeconds());
     }
 
     /**

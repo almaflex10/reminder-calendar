@@ -6,11 +6,26 @@
 out/
 
 # ---------- VS Code ----------
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
 # ---------- Titkok, helyi beállítások ----------
 application-local.yml
 .env
+.env.*
+
+# ---------- Angular / Node ----------
+node_modules/
+.angular/
+dist/
+out-tsc/
+coverage/
+.sass-cache/
+npm-debug.log*
+yarn-error.log*
 
 # ---------- Operációs rendszer ----------
 Thumbs.db
