@@ -1,0 +1,2 @@
+# Netlify / Cloudflare Pages: minden útvonal (pl. /calendar, /verify?token=...) az Angular appot töltse be.
+/*  /index.html  200

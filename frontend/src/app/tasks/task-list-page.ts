@@ -8,7 +8,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TaskApi } from '../core/api.services';
-import { parseIsoDate, repeatLabel, timeRange, today, isRecurring } from '../core/date-utils';
+import { isRecurring, parseIsoDate, repeatLabel, timeRange, today } from '../core/date-utils';
 import { errorMessage } from '../core/error-message';
 import { TaskDetail } from '../core/models';
 import { confirm } from '../shared/confirm-dialog';
@@ -58,7 +58,8 @@ type Filter = 'all' | 'recurring' | 'once';
                     }
                   </span>
                   @if (t.dueTime || t.endTime) {
-                      <span class="meta-item"><mat-icon>schedule</mat-icon>{{ timeRange(t.dueTime, t.endTime) }}</span>                  }
+                    <span class="meta-item"><mat-icon>schedule</mat-icon>{{ timeRange(t.dueTime, t.endTime) }}</span>
+                  }
                   @if (t.category) {
                     <span class="meta-item"><span class="color-dot" [style.background]="t.category.color"></span>{{ t.category.name }}</span>
                   }
@@ -166,7 +167,7 @@ export class TaskListPage implements OnInit {
 
   /** Lejárt: egyszeri és elmúlt, vagy ismétlődő, aminek már vége. */
   isPast(t: TaskDetail): boolean {
-    const last = isRecurring(t) ? t.endDate : t.startDate;   
+    const last = isRecurring(t) ? t.endDate : t.startDate;
     return last !== null && parseIsoDate(last) < today();
   }
 
@@ -183,7 +184,7 @@ export class TaskListPage implements OnInit {
   }
 
   remove(t: TaskDetail): void {
-      const message = isRecurring(t)                         
+    const message = isRecurring(t)
       ? `A(z) „${t.title}” minden ismétlődése törlődik, a korábbi pipákkal együtt.`
       : `A(z) „${t.title}” véglegesen törlődik.`;
     confirm(this.dialog, { title: 'Teendő törlése', message }).subscribe((ok) => {

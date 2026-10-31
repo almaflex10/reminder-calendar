@@ -137,7 +137,8 @@
         }
       </div>
     }
-        <!-- ===================== Már teljesített teendők ===================== -->
+
+    <!-- ===================== Már teljesített teendők ===================== -->
     @if (doneTasks().length > 0) {
       <div class="done-section">
         <button class="done-toggle" type="button" (click)="showDone.set(!showDone())" [attr.aria-expanded]="showDone()">

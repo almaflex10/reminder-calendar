@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { DestroyRef, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
@@ -11,16 +11,16 @@ import { CalendarApi, TaskApi } from '../core/api.services';
 import {
   addDays,
   addMonths,
-  isSameDay,
+  hhmm,
   isRecurring,
+  isSameDay,
   repeatLabel,
-  timeRange,
+  shortTime,
   startOfMonth,
+  timeRange,
   toIsoDate,
   today,
-  weekdayIndex, 
-  hhmm, 
-  shortTime
+  weekdayIndex,
 } from '../core/date-utils';
 import { errorMessage } from '../core/error-message';
 import { CalendarDay, DayTask } from '../core/models';
@@ -48,8 +48,8 @@ export class CalendarPage implements OnInit {
 
   protected readonly weekdays = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
   protected readonly repeatLabel = repeatLabel;
-  protected readonly timeRange = timeRange;
   protected readonly isRecurring = isRecurring;
+  protected readonly timeRange = timeRange;
 
   /** Percenként frissül, hogy a "Lejárt" jelzés magától megjelenjen. */
   readonly now = signal(new Date());
@@ -143,7 +143,8 @@ export class CalendarPage implements OnInit {
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
-    /**
+
+  /**
    * Lejárt-e a (még ki nem pipált) teendő a kiválasztott napon:
    * - elmúlt napon mindig
    * - ma, ha elmúlt a befejezés, vagy ha nincs befejezés, a kezdés időpontja
@@ -182,6 +183,7 @@ export class CalendarPage implements OnInit {
       },
     });
   }
+
   /** A "Teljesítve" listában a pipa kivétele: visszakerül a nyitottak közé. */
   uncomplete(task: DayTask): void {
     this.setBusy(task.id, true);

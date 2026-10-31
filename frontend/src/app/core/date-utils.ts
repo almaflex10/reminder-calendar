@@ -1,9 +1,6 @@
 // Dátumkezelés helyi idő szerint. A toISOString() UTC-re vált, ami éjfél körül
 // rossz napot adna – ezért itt mindent kézzel, a helyi dátumból számolunk.
-export const WEEKDAYS_MASK = 0b0011111; // H–P
-export const WEEKEND_MASK = 0b1100000; // Szo–V
-export const ALL_DAYS_MASK = 0b1111111;
-export const DAY_NAMES_SHORT = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+
 export function toIsoDate(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -46,6 +43,7 @@ export function weekdayIndex(d: Date): number {
 export function shortTime(t: string | null): string | null {
   return t ? t.slice(0, 5) : null;
 }
+
 /** "10:00–12:00"; csak kezdésnél "10:00"; ha csak befejezés van (éjféltől), "12:00-ig" */
 export function timeRange(start: string | null, end: string | null): string | null {
   if (end && (!start || shortTime(start) === '00:00')) return `${shortTime(end)}-ig`;
@@ -57,6 +55,13 @@ export function timeRange(start: string | null, end: string | null): string | nu
 export function hhmm(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
+
+// ---------- Heti ismétlődés: bitmaszk, H = 1, K = 2, Sze = 4, ... V = 64 ----------
+export const WEEKDAYS_MASK = 0b0011111; // H–P
+export const WEEKEND_MASK = 0b1100000; // Szo–V
+export const ALL_DAYS_MASK = 0b1111111;
+export const DAY_NAMES_SHORT = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+
 /** [0, 2, 4] (H, Sze, P) -> 21 */
 export function daysToMask(days: number[]): number {
   return days.reduce((mask, d) => mask | (1 << d), 0);
@@ -77,7 +82,9 @@ export function repeatLabel(days: number | null, weekdays: number | null = null)
     if (weekdays === WEEKDAYS_MASK) return 'Hétköznap';
     if (weekdays === WEEKEND_MASK) return 'Hétvégén';
     if (weekdays === ALL_DAYS_MASK) return 'Minden nap';
-    return maskToDays(weekdays).map((d) => DAY_NAMES_SHORT[d]).join(', ');
+    return maskToDays(weekdays)
+      .map((d) => DAY_NAMES_SHORT[d])
+      .join(', ');
   }
   switch (days) {
     case null:

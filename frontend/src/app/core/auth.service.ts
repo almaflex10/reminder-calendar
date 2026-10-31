@@ -26,7 +26,7 @@ export class AuthService {
 
   login(username: string, password: string): Observable<void> {
     return this.http.post<AuthResponse>('/api/auth/login', { username, password }).pipe(
-            tap((res) => this.startSession(res)),
+      tap((res) => this.startSession(res)),
       map(() => undefined),
     );
   }
@@ -46,6 +46,7 @@ export class AuthService {
   resendVerification(email: string): Observable<MessageResponse> {
     return this.http.post<MessageResponse>('/api/auth/resend-verification', { email });
   }
+
   private startSession(res: AuthResponse): void {
     const session: Session = {
       token: res.token,
@@ -82,6 +83,4 @@ function saveSession(s: Session | null): void {
   } catch {
     // privát böngészőablakban a localStorage hibát dobhat – ilyenkor csak a memóriában marad
   }
-  
 }
-

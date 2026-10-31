@@ -8,7 +8,10 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { errorMessage } from '../core/error-message';
 
-/** /verify?token=... – sikeres megerősítés után bejelentkeztet és a naptárra visz. */
+/**
+ * Az e-mailben kapott link ide mutat: /verify?token=...
+ * Sikeres megerősítés után rögtön be is jelentkeztet, és a naptárra visz.
+ */
 @Component({
   selector: 'app-verify-page',
   imports: [RouterLink, MatCardModule, MatButtonModule, MatIconModule, MatProgressBarModule],
@@ -16,6 +19,7 @@ import { errorMessage } from '../core/error-message';
     <main class="auth-page">
       <mat-card class="auth-card" appearance="outlined">
         <div class="brand"><mat-icon>event_available</mat-icon> Teendőnaptár</div>
+
         @if (error(); as message) {
           <h1>Nem sikerült</h1>
           <p class="form-error">{{ message }}</p>
@@ -34,7 +38,9 @@ export class VerifyPage implements OnInit {
   private readonly router = inject(Router);
   private readonly snackBar = inject(MatSnackBar);
 
+  /** a ?token= query paraméter (withComponentInputBinding miatt jön ide magától) */
   readonly token = input<string>();
+
   readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
