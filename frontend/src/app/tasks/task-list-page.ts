@@ -57,7 +57,7 @@ type Filter = 'all' | 'recurring' | 'once';
                       {{ t.startDate | date: 'y. MMM d., EEEE' }}
                     }
                   </span>
-                  @if (t.dueTime) {
+                  @if (t.dueTime || t.endTime) {
                       <span class="meta-item"><mat-icon>schedule</mat-icon>{{ timeRange(t.dueTime, t.endTime) }}</span>                  }
                   @if (t.category) {
                     <span class="meta-item"><span class="color-dot" [style.background]="t.category.color"></span>{{ t.category.name }}</span>

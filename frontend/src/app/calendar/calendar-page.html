@@ -90,7 +90,7 @@
     @if (dayTasks().length > 0) {
       <ul class="task-list">
         @for (task of dayTasks(); track task.id) {
-          <li class="task" [style.--cat-color]="task.categoryColor ?? 'var(--mat-sys-outline-variant)'">
+          <li class="task" [class.overdue]="isOverdue(task)" [style.--cat-color]="task.categoryColor ?? 'var(--mat-sys-outline-variant)'">
             <mat-checkbox
               [checked]="busy().has(task.id)"
               [disabled]="busy().has(task.id)"
@@ -100,8 +100,11 @@
             <div class="task-body">
               <span class="task-title">{{ task.title }}</span>
               <span class="task-meta">
-                @if (task.dueTime) {
-                  <span class="meta-item"><mat-icon>schedule</mat-icon>{{ timeRange(task.dueTime, task.endTime) }}</span>
+                @if (isOverdue(task)) {
+                  <span class="overdue-badge">Lejárt</span>
+                }
+                @if (task.dueTime || task.endTime) {
+                  <span class="meta-item time"><mat-icon>schedule</mat-icon>{{ timeRange(task.dueTime, task.endTime) }}</span>
                 }
                 @if (isRecurring(task)) {
                   <span class="meta-item"><mat-icon>repeat</mat-icon>{{ repeatLabel(task.repeatIntervalDays, task.repeatWeekdays) }}</span>

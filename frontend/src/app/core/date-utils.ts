@@ -46,10 +46,16 @@ export function weekdayIndex(d: Date): number {
 export function shortTime(t: string | null): string | null {
   return t ? t.slice(0, 5) : null;
 }
-/** "10:00–12:00", vagy csak "10:00", ha nincs befejezés */
+/** "10:00–12:00"; csak kezdésnél "10:00"; ha csak befejezés van (éjféltől), "12:00-ig" */
 export function timeRange(start: string | null, end: string | null): string | null {
+  if (end && (!start || shortTime(start) === '00:00')) return `${shortTime(end)}-ig`;
   if (!start) return null;
   return end ? `${shortTime(start)}–${shortTime(end)}` : shortTime(start);
+}
+
+/** "HH:mm" a megadott időpontból */
+export function hhmm(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 /** [0, 2, 4] (H, Sze, P) -> 21 */
 export function daysToMask(days: number[]): number {

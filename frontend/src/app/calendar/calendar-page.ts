@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
@@ -18,7 +18,9 @@ import {
   startOfMonth,
   toIsoDate,
   today,
-  weekdayIndex,
+  weekdayIndex, 
+  hhmm, 
+  shortTime
 } from '../core/date-utils';
 import { errorMessage } from '../core/error-message';
 import { CalendarDay, DayTask } from '../core/models';
@@ -48,6 +50,14 @@ export class CalendarPage implements OnInit {
   protected readonly repeatLabel = repeatLabel;
   protected readonly timeRange = timeRange;
   protected readonly isRecurring = isRecurring;
+
+  /** Percenként frissül, hogy a "Lejárt" jelzés magától megjelenjen. */
+  readonly now = signal(new Date());
+
+  constructor() {
+    const timer = setInterval(() => this.now.set(new Date()), 60_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
 
   /** A megjelenített hónap első napja. */
   readonly month = signal(startOfMonth(today()));
@@ -128,6 +138,21 @@ export class CalendarPage implements OnInit {
     if (window.matchMedia('(max-width: 900px)').matches) {
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }
+    /**
+   * Lejárt-e a (még ki nem pipált) teendő a kiválasztott napon:
+   * - elmúlt napon mindig
+   * - ma, ha elmúlt a befejezés, vagy ha nincs befejezés, a kezdés időpontja
+   * - időpont nélkül csak a nap végén
+   */
+  isOverdue(task: DayTask): boolean {
+    const now = this.now();
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const day = this.selected();
+    if (day < nowDay) return true;
+    if (day > nowDay) return false;
+    const deadline = shortTime(task.endTime ?? task.dueTime);
+    return deadline !== null && hhmm(now) > deadline;
   }
 
   // ===================== Teendők =====================

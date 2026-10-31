@@ -14,6 +14,8 @@ import reminder.calendar.exception.NotFoundException;
 import reminder.calendar.repo.TaskCompletionRepository;
 import reminder.calendar.repo.TaskRepository;
 import reminder.calendar.repo.UserRepository;
+
+import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
@@ -129,14 +131,17 @@ public class TaskService {
         task.setTitle(req.title().trim());
         task.setDescription(req.description() == null || req.description().isBlank() ? null : req.description().trim());
         task.setStartDate(req.startDate());
+        LocalTime start = req.dueTime();
         if (req.endTime() != null) {
-            if (req.dueTime() == null) {
-                throw new BadRequestException("A befejezéshez kezdési időpontot is meg kell adni.");
+            if (start == null) {
+                start = LocalTime.MIDNIGHT; // csak befejezés van megadva: éjféltől tart ("12:00-ig")
             }
-            if (!req.endTime().isAfter(req.dueTime())) {
+            if (!req.endTime().isAfter(start)) {
                 throw new BadRequestException("A befejezés a kezdés után legyen.");
             }
         }
+        task.setDueTime(start);
+        task.setEndTime(req.endTime());
         task.setDueTime(req.dueTime());
         task.setEndTime(req.endTime());
         task.setRepeatIntervalDays(req.repeatIntervalDays());

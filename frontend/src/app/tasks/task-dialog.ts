@@ -252,7 +252,7 @@ export class TaskDialog implements OnInit {
         customDays: days !== null && days > 2 ? days : 3,
         days: mask !== null ? maskToDays(mask) : [],
         startDate: parseIsoDate(t.startDate),
-        dueTime: shortTime(t.dueTime) ?? '',
+        dueTime: t.endTime && shortTime(t.dueTime) === '00:00' ? '' : (shortTime(t.dueTime) ?? ''),
         endTime: shortTime(t.endTime) ?? '',
         endDate: t.endDate ? parseIsoDate(t.endDate) : null,
         description: t.description ?? '',
@@ -273,11 +273,8 @@ export class TaskDialog implements OnInit {
     }
     this.daysError.set(v.repeat === 'days' && v.days.length === 0);
     // "HH:mm" szövegek – így egyszerűen összehasonlíthatók
-    this.timeError.set(
-      v.endTime && !v.dueTime ? 'A befejezéshez add meg a kezdést is.'
-      : v.endTime && v.endTime <= v.dueTime ? 'A befejezés a kezdés után legyen.'
-      : null,
-    );
+    // ha csak befejezés van, a kezdés éjfél lesz (a backend állítja be)
+    this.timeError.set(v.endTime && v.dueTime && v.endTime <= v.dueTime ? 'A befejezés a kezdés után legyen.' : null);
     if (invalid || this.daysError() || this.timeError()) {
       this.form.markAllAsTouched();
       return;
