@@ -35,20 +35,8 @@ public class EmailService {
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private final AppProperties props;
 
-    @Value("${app.mail.mode:log}")
-    private String mode;
 
-    @Value("${app.mail.from}")
-    private String from;
 
-    @Value("${app.mail.from-name:Teendőnaptár}")
-    private String fromName;
-
-    @Value("${app.mail.brevo-api-key:}")
-    private String brevoApiKey;
-
-    @Value("${app.verification-url}")
-    private String verificationUrl;
 
     public void sendVerificationEmail(String to, String username, String token) {
         String link = props.verificationUrl() + "?token=" + token;
@@ -78,7 +66,7 @@ public class EmailService {
 
     private void sendViaSmtp(String to, String subject, String text) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(from);
+        message.setFrom(props.mail().from());
         message.setTo(to);
         message.setSubject(subject);
         message.setText(text);
@@ -107,6 +95,7 @@ public class EmailService {
                 log.error("Brevo hiba ({}): {}", response.statusCode(), response.body());
                 throw emailFailed();
             }
+            log.info("Megerősítő e-mail átadva a Brevónak: {} (válasz: {})", to, response.body());
         } catch (IOException e) {
             log.error("Brevo nem érhető el", e);
             throw emailFailed();

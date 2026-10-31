@@ -1,6 +1,7 @@
 package reminder.calendar.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +26,7 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -84,9 +86,12 @@ public class AuthService {
      */
     @Transactional
     public void resendVerification(String email) {
-        userRepository.findByEmail(normalizeEmail(email))
+        String normalized = normalizeEmail(email);
+        userRepository.findByEmail(normalized)
                 .filter(user -> !user.isEnabled())
-                .ifPresent(this::sendNewVerificationToken);
+                .ifPresentOrElse(
+                        this::sendNewVerificationToken,
+                        () -> log.info("Újraküldés kihagyva: nincs megerősítetlen fiók ezzel a címmel: {}", normalized));
     }
 
     /** Bejelentkezés felhasználónévvel és jelszóval; sikeres esetben JWT tokent ad. */

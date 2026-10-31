@@ -17,20 +17,10 @@ spring:
       ddl-auto: update
     open-in-view: false
 
-  # ---------- E-mail küldés ----------
-  # Fejlesztéshez Mailpit: docker run -p 1025:1025 -p 8025:8025 axllent/mailpit
-  # A levelek a http://localhost:8025 címen láthatók, valódi e-mail nem megy ki.
-  mail:                          # csak app.mail.mode=smtp esetén
+  mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:1025}
-    # Gmail-lel (alkalmazásjelszó kell, nem a sima jelszó):
-    # host: smtp.gmail.com
-    # port: 587
-    # username: sajat@gmail.com
-    # password: ${MAIL_PASSWORD}
-    # properties:
-    #   mail.smtp.auth: true
-    #   mail.smtp.starttls.enable: true
+
 
 server:
   port: ${PORT:8080}
@@ -45,9 +35,9 @@ app:
   frontend-url: ${APP_FRONTEND_URL:http://localhost:4200}
   verification-url: ${APP_VERIFICATION_URL:http://localhost:4200/verify}
   verification-token-validity-hours: 24
-  registration-enabled: ${APP_REGISTRATION_ENABLED:true}
+  registration-enabled: ${APP_REGISTRATION_ENABLED}
   mail:
-    mode: ${APP_MAIL_MODE:log}   # log | smtp | brevo
-    from: ${APP_MAIL_FROM:noreply@reminder.local}
+    mode: ${APP_MAIL_MODE}
+    from: ${APP_MAIL_FROM}
     from-name: Teendőnaptár
     brevo-api-key: ${BREVO_API_KEY:}
