@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDialog } from '@angular/material/dialog';
@@ -11,10 +11,13 @@ import { CalendarApi, TaskApi } from '../core/api.services';
 import {
   addDays,
   addMonths,
+  hhmm,
+  isRecurring,
   isSameDay,
   repeatLabel,
   shortTime,
   startOfMonth,
+  timeRange,
   toIsoDate,
   today,
   weekdayIndex,
@@ -45,7 +48,16 @@ export class CalendarPage implements OnInit {
 
   protected readonly weekdays = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
   protected readonly repeatLabel = repeatLabel;
-  protected readonly shortTime = shortTime;
+  protected readonly isRecurring = isRecurring;
+  protected readonly timeRange = timeRange;
+
+  /** Percenként frissül, hogy a "Lejárt" jelzés magától megjelenjen. */
+  readonly now = signal(new Date());
+
+  constructor() {
+    const timer = setInterval(() => this.now.set(new Date()), 60_000);
+    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
 
   /** A megjelenített hónap első napja. */
   readonly month = signal(startOfMonth(today()));
@@ -53,6 +65,10 @@ export class CalendarPage implements OnInit {
 
   readonly summaries = signal(new Map<string, CalendarDay>());
   readonly dayTasks = signal<DayTask[]>([]);
+  readonly openTasks = computed(() => this.dayTasks().filter((t) => !t.completed));
+  readonly doneTasks = computed(() => this.dayTasks().filter((t) => t.completed));
+  /** a "Teljesítve" rész ki van-e nyitva */
+  readonly showDone = signal(true);
   readonly loadingMonth = signal(false);
   readonly loadingDay = signal(false);
   /** A pipálás alatt lévő teendők – hogy ne lehessen kétszer kattintani. */
@@ -128,6 +144,22 @@ export class CalendarPage implements OnInit {
     }
   }
 
+  /**
+   * Lejárt-e a (még ki nem pipált) teendő a kiválasztott napon:
+   * - elmúlt napon mindig
+   * - ma, ha elmúlt a befejezés, vagy ha nincs befejezés, a kezdés időpontja
+   * - időpont nélkül csak a nap végén
+   */
+  isOverdue(task: DayTask): boolean {
+    const now = this.now();
+    const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const day = this.selected();
+    if (day < nowDay) return true;
+    if (day > nowDay) return false;
+    const deadline = shortTime(task.endTime ?? task.dueTime);
+    return deadline !== null && hhmm(now) > deadline;
+  }
+
   // ===================== Teendők =====================
 
   complete(task: DayTask): void {
@@ -137,7 +169,7 @@ export class CalendarPage implements OnInit {
     this.taskApi.complete(task.id, date).subscribe({
       next: () => {
         this.setBusy(task.id, false);
-        this.dayTasks.update((list) => list.filter((t) => t.id !== task.id));
+        this.markCompleted(task.id, true);
         this.loadMonth();
 
         this.snackBar
@@ -152,14 +184,28 @@ export class CalendarPage implements OnInit {
     });
   }
 
+  /** A "Teljesítve" listában a pipa kivétele: visszakerül a nyitottak közé. */
+  uncomplete(task: DayTask): void {
+    this.setBusy(task.id, true);
+    this.undo(task, this.selectedIso());
+  }
+
   private undo(task: DayTask, date: string): void {
     this.taskApi.undoComplete(task.id, date).subscribe({
       next: () => {
+        this.setBusy(task.id, false);
+        if (date === this.selectedIso()) this.markCompleted(task.id, false);
         this.loadMonth();
-        if (date === this.selectedIso()) this.loadDay();
       },
-      error: (err) => this.snackBar.open(errorMessage(err), 'OK', { duration: 5000 }),
+      error: (err) => {
+        this.setBusy(task.id, false);
+        this.snackBar.open(errorMessage(err), 'OK', { duration: 5000 });
+      },
     });
+  }
+
+  private markCompleted(id: number, completed: boolean): void {
+    this.dayTasks.update((list) => list.map((t) => (t.id === id ? { ...t, completed } : t)));
   }
 
   newTask(): void {

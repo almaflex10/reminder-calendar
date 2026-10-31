@@ -34,10 +34,14 @@ export interface DayTask {
   description: string | null;
   date: string;
   dueTime: string | null;
+  endTime: string | null;
   repeatIntervalDays: number | null;
+  repeatWeekdays: number | null;
   categoryId: number | null;
   categoryName: string | null;
   categoryColor: string | null;
+  /** ki van-e már pipálva ezen a napon */
+  completed: boolean;
 }
 
 /** Egy teendő minden adata (GET /api/tasks/all, /api/tasks/{id}). */
@@ -48,7 +52,9 @@ export interface TaskDetail {
   category: Category | null;
   startDate: string;
   dueTime: string | null;
+  endTime: string | null;
   repeatIntervalDays: number | null;
+  repeatWeekdays: number | null;
   endDate: string | null;
 }
 
@@ -58,7 +64,11 @@ export interface TaskRequest {
   categoryId: number | null;
   startDate: string;
   dueTime: string | null;
+  endTime: string | null;
+  /** n naponta (1 = naponta, 2 = kétnaponta) */
   repeatIntervalDays: number | null;
+  /** a hét napjai bitmaszkként: H=1, K=2, Sze=4, Cs=8, P=16, Szo=32, V=64 */
+  repeatWeekdays: number | null;
   endDate: string | null;
 }
 

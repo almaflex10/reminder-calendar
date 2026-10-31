@@ -7,7 +7,7 @@ import { CalendarDay, Category, CategoryRequest, DayTask, TaskDetail, TaskReques
 export class TaskApi {
   private readonly http = inject(HttpClient);
 
-  /** Az adott nap még nyitott teendői. */
+  /** Az adott nap összes teendője (a kipipáltaknál completed = true). */
   forDay(date: string): Observable<DayTask[]> {
     return this.http.get<DayTask[]>('/api/tasks', { params: { date } });
   }

@@ -58,10 +58,23 @@ public class Task {
     @Column(name = "repeat_interval_days")
     private Integer repeatIntervalDays;
 
+    /** Hétfő = 1, kedd = 2, szerda = 4, ... vasárnap = 64 – ezek összege adja a heti napokat. */
+    public static final int WEEKDAYS = 0b0011111; // H–P = 31
+    public static final int WEEKEND = 0b1100000;  // Szo–V = 96
+
+    /** A hét adott napjain ismétlődik (bitmaszk). Vagy ez, vagy a repeatIntervalDays van kitöltve. */
+    @Column(name = "repeat_weekdays")
+    private Integer repeatWeekdays;
+
     /** Opcionális: meddig ismétlődjön (null = örökké). */
     @Setter
     @Column(name = "end_date")
     private LocalDate endDate;
+
+    /** Opcionális befejezési időpont, pl. 12:00 – csak kezdési időponttal együtt. */
+    @Setter
+    @Column(name = "end_time")
+    private LocalTime endTime;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -88,16 +101,30 @@ public class Task {
         this.repeatIntervalDays = repeatIntervalDays;
     }
 
+    public void setRepeatWeekdays(Integer repeatWeekdays) {
+        if (repeatWeekdays != null && (repeatWeekdays < 1 || repeatWeekdays > 127)) {
+            throw new IllegalArgumentException("Legalább egy napot ki kell választani.");
+        }
+        this.repeatWeekdays = repeatWeekdays;
+    }
+
     public boolean isRecurring() {
-        return repeatIntervalDays != null;
+        return repeatIntervalDays != null || repeatWeekdays != null;
     }
 
     /** Esedékes-e a teendő az adott napon (az elvégzést nem nézi). */
     public boolean isDueOn(LocalDate day) {
         if (day.isBefore(startDate)) return false;
         if (endDate != null && day.isAfter(endDate)) return false;
-        if (!isRecurring()) return day.equals(startDate);
-        long daysSinceStart = ChronoUnit.DAYS.between(startDate, day);
-        return daysSinceStart % repeatIntervalDays == 0;
+
+        if (repeatWeekdays != null) {
+            int bit = 1 << (day.getDayOfWeek().getValue() - 1); // hétfő = 1 -> 1. bit
+            return (repeatWeekdays & bit) != 0;
+        }
+        if (repeatIntervalDays != null) {
+            long daysSinceStart = ChronoUnit.DAYS.between(startDate, day);
+            return daysSinceStart % repeatIntervalDays == 0;
+        }
+        return day.equals(startDate);
     }
 }

@@ -8,7 +8,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TaskApi } from '../core/api.services';
-import { parseIsoDate, repeatLabel, shortTime, today } from '../core/date-utils';
+import { isRecurring, parseIsoDate, repeatLabel, timeRange, today } from '../core/date-utils';
 import { errorMessage } from '../core/error-message';
 import { TaskDetail } from '../core/models';
 import { confirm } from '../shared/confirm-dialog';
@@ -47,9 +47,9 @@ type Filter = 'all' | 'recurring' | 'once';
                 <span class="title">{{ t.title }}</span>
                 <span class="meta">
                   <span class="meta-item">
-                    <mat-icon>{{ t.repeatIntervalDays ? 'repeat' : 'event' }}</mat-icon>
-                    @if (t.repeatIntervalDays) {
-                      {{ repeatLabel(t.repeatIntervalDays) }}, {{ t.startDate | date: 'y. MMM d.' }}-tól
+                    <mat-icon>{{ isRecurring(t) ? 'repeat' : 'event' }}</mat-icon>
+                    @if (isRecurring(t)) {
+                      {{ repeatLabel(t.repeatIntervalDays, t.repeatWeekdays) }}, {{ t.startDate | date: 'y. MMM d.' }}-tól
                       @if (t.endDate) {
                         {{ t.endDate | date: 'y. MMM d.' }}-ig
                       }
@@ -57,8 +57,8 @@ type Filter = 'all' | 'recurring' | 'once';
                       {{ t.startDate | date: 'y. MMM d., EEEE' }}
                     }
                   </span>
-                  @if (t.dueTime) {
-                    <span class="meta-item"><mat-icon>schedule</mat-icon>{{ shortTime(t.dueTime) }}</span>
+                  @if (t.dueTime || t.endTime) {
+                    <span class="meta-item"><mat-icon>schedule</mat-icon>{{ timeRange(t.dueTime, t.endTime) }}</span>
                   }
                   @if (t.category) {
                     <span class="meta-item"><span class="color-dot" [style.background]="t.category.color"></span>{{ t.category.name }}</span>
@@ -146,17 +146,18 @@ export class TaskListPage implements OnInit {
   private readonly snackBar = inject(MatSnackBar);
 
   protected readonly repeatLabel = repeatLabel;
-  protected readonly shortTime = shortTime;
+  protected readonly isRecurring = isRecurring;
+  protected readonly timeRange = timeRange;
 
   readonly tasks = signal<TaskDetail[]>([]);
   readonly loading = signal(false);
   readonly filter = signal<Filter>('all');
 
-  readonly recurringCount = computed(() => this.tasks().filter((t) => t.repeatIntervalDays !== null).length);
+  readonly recurringCount = computed(() => this.tasks().filter(isRecurring).length);
   readonly visible = computed(() => {
     const f = this.filter();
     return this.tasks().filter((t) =>
-      f === 'all' ? true : f === 'recurring' ? t.repeatIntervalDays !== null : t.repeatIntervalDays === null,
+      f === 'all' ? true : f === 'recurring' ? isRecurring(t) : !isRecurring(t),
     );
   });
 
@@ -166,7 +167,7 @@ export class TaskListPage implements OnInit {
 
   /** Lejárt: egyszeri és elmúlt, vagy ismétlődő, aminek már vége. */
   isPast(t: TaskDetail): boolean {
-    const last = t.repeatIntervalDays === null ? t.startDate : t.endDate;
+    const last = isRecurring(t) ? t.endDate : t.startDate;
     return last !== null && parseIsoDate(last) < today();
   }
 
@@ -183,7 +184,7 @@ export class TaskListPage implements OnInit {
   }
 
   remove(t: TaskDetail): void {
-    const message = t.repeatIntervalDays
+    const message = isRecurring(t)
       ? `A(z) „${t.title}” minden ismétlődése törlődik, a korábbi pipákkal együtt.`
       : `A(z) „${t.title}” véglegesen törlődik.`;
     confirm(this.dialog, { title: 'Teendő törlése', message }).subscribe((ok) => {

@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -11,7 +12,18 @@ import { MatSelectModule } from '@angular/material/select';
 import { RouterLink } from '@angular/router';
 import { startWith } from 'rxjs';
 import { CategoryApi, TaskApi } from '../core/api.services';
-import { parseIsoDate, shortTime, toIsoDate, today } from '../core/date-utils';
+import {
+  DAY_NAMES_SHORT,
+  WEEKDAYS_MASK,
+  WEEKEND_MASK,
+  daysToMask,
+  isRecurring,
+  maskToDays,
+  parseIsoDate,
+  shortTime,
+  toIsoDate,
+  today,
+} from '../core/date-utils';
 import { errorMessage } from '../core/error-message';
 import { Category, TaskDetail, TaskRequest } from '../core/models';
 import { confirm } from '../shared/confirm-dialog';
@@ -26,7 +38,8 @@ export interface TaskDialogData {
 /** Mit csinált a párbeszédablak – ebből tudja a hívó, hogy frissítenie kell. */
 export type TaskDialogResult = 'saved' | 'deleted' | undefined;
 
-type RepeatMode = 'once' | '1' | '2' | 'custom';
+/** once = egyszeri; 1, 2, custom = n naponta; weekdays, weekend, days = a hét adott napjain */
+type RepeatMode = 'once' | '1' | '2' | 'custom' | 'weekdays' | 'weekend' | 'days';
 
 @Component({
   selector: 'app-task-dialog',
@@ -39,6 +52,7 @@ type RepeatMode = 'once' | '1' | '2' | 'custom';
     MatSelectModule,
     MatDatepickerModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
   ],
   template: `
@@ -76,7 +90,10 @@ type RepeatMode = 'once' | '1' | '2' | 'custom';
               <mat-option value="once">Egyszeri</mat-option>
               <mat-option value="1">Naponta</mat-option>
               <mat-option value="2">Kétnaponta</mat-option>
-              <mat-option value="custom">Egyéni…</mat-option>
+              <mat-option value="custom">Egyéni (pl. 3 naponta)…</mat-option>
+              <mat-option value="weekdays">Hétköznap (H–P)</mat-option>
+              <mat-option value="weekend">Hétvégén (Szo–V)</mat-option>
+              <mat-option value="days">A hét adott napjain…</mat-option>
             </mat-select>
           </mat-form-field>
 
@@ -92,22 +109,43 @@ type RepeatMode = 'once' | '1' | '2' | 'custom';
           }
         </div>
 
+        @if (repeat() === 'days') {
+          <div class="weekday-picker">
+            <mat-button-toggle-group multiple formControlName="days" aria-label="A hét napjai" hideMultipleSelectionIndicator (change)="daysError.set(false)">
+              @for (name of dayNames; track $index) {
+                <mat-button-toggle [value]="$index">{{ name }}</mat-button-toggle>
+              }
+            </mat-button-toggle-group>
+            @if (daysError()) {
+              <p class="form-error">Válassz ki legalább egy napot.</p>
+            }
+          </div>
+        }
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ isRecurring() ? 'Kezdés' : 'Nap' }}</mat-label>
+          <input matInput [matDatepicker]="startPicker" formControlName="startDate" />
+          <mat-datepicker-toggle matIconSuffix [for]="startPicker" />
+          <mat-datepicker #startPicker />
+          @if (form.controls.startDate.invalid) {
+            <mat-error>Adj meg egy dátumot</mat-error>
+          }
+        </mat-form-field>
+
         <div class="row">
           <mat-form-field appearance="outline">
-            <mat-label>{{ isRecurring() ? 'Első nap' : 'Nap' }}</mat-label>
-            <input matInput [matDatepicker]="startPicker" formControlName="startDate" />
-            <mat-datepicker-toggle matIconSuffix [for]="startPicker" />
-            <mat-datepicker #startPicker />
-            @if (form.controls.startDate.invalid) {
-              <mat-error>Adj meg egy dátumot</mat-error>
-            }
+            <mat-label>Ettől (nem kötelező)</mat-label>
+            <input matInput type="time" formControlName="dueTime" (input)="timeError.set(null)" />
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Időpont (nem kötelező)</mat-label>
-            <input matInput type="time" formControlName="dueTime" />
+            <mat-label>Eddig (nem kötelező)</mat-label>
+            <input matInput type="time" formControlName="endTime" (input)="timeError.set(null)" />
           </mat-form-field>
         </div>
+        @if (timeError()) {
+          <p class="form-error time-error">{{ timeError() }}</p>
+        }
 
         @if (isRecurring()) {
           <mat-form-field appearance="outline" class="full-width">
@@ -159,6 +197,18 @@ type RepeatMode = 'once' | '1' | '2' | 'custom';
     .spacer {
       flex: 1;
     }
+    .time-error {
+      margin-top: -8px;
+    }
+    .weekday-picker {
+      margin: -4px 0 16px;
+    }
+    .weekday-picker mat-button-toggle-group {
+      width: 100%;
+    }
+    .weekday-picker mat-button-toggle {
+      flex: 1;
+    }
     .delete {
       color: var(--mat-sys-error);
     }
@@ -188,8 +238,10 @@ export class TaskDialog implements OnInit {
     categoryId: this.fb.control<number | null>(null),
     repeat: this.fb.nonNullable.control<RepeatMode>('once'),
     customDays: this.fb.nonNullable.control(3, [Validators.required, Validators.min(1), Validators.max(365)]),
+    days: this.fb.nonNullable.control<number[]>([]),
     startDate: this.fb.control<Date | null>(null, Validators.required),
     dueTime: this.fb.nonNullable.control(''),
+    endTime: this.fb.nonNullable.control(''),
     endDate: this.fb.control<Date | null>(null),
     description: this.fb.nonNullable.control(''),
   });
@@ -198,6 +250,10 @@ export class TaskDialog implements OnInit {
     requireSync: true,
   });
   readonly isRecurring = computed(() => this.repeat() !== 'once');
+  readonly dayNames = DAY_NAMES_SHORT;
+  /** csak mentéskor mutatjuk, ha a "napjain" módban nincs kiválasztva nap */
+  readonly daysError = signal(false);
+  readonly timeError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.categoryApi.list().subscribe((list) => this.categories.set(list));
@@ -205,13 +261,17 @@ export class TaskDialog implements OnInit {
     const t = this.data.task;
     if (t) {
       const days = t.repeatIntervalDays;
+      const mask = t.repeatWeekdays;
       this.form.setValue({
         title: t.title,
         categoryId: t.category?.id ?? null,
-        repeat: days === null ? 'once' : days === 1 ? '1' : days === 2 ? '2' : 'custom',
+        repeat: repeatModeOf(days, mask),
         customDays: days !== null && days > 2 ? days : 3,
+        days: mask !== null ? maskToDays(mask) : [],
         startDate: parseIsoDate(t.startDate),
-        dueTime: shortTime(t.dueTime) ?? '',
+        // "12:00-ig" típusú teendőnél a kezdés (00:00) üresen jelenjen meg
+        dueTime: t.endTime && shortTime(t.dueTime) === '00:00' ? '' : (shortTime(t.dueTime) ?? ''),
+        endTime: shortTime(t.endTime) ?? '',
         endDate: t.endDate ? parseIsoDate(t.endDate) : null,
         description: t.description ?? '',
       });
@@ -225,20 +285,34 @@ export class TaskDialog implements OnInit {
     // az egyéni napszám csak akkor számít, ha az "Egyéni" van kiválasztva
     const invalid = this.form.controls.title.invalid || this.form.controls.startDate.invalid ||
       (v.repeat === 'custom' && this.form.controls.customDays.invalid);
-    if (invalid) {
+    this.daysError.set(v.repeat === 'days' && v.days.length === 0);
+    // "HH:mm" szövegek – így egyszerűen összehasonlíthatók
+    // ha csak befejezés van, a kezdés éjfél lesz (a backend állítja be)
+    this.timeError.set(v.endTime && v.dueTime && v.endTime <= v.dueTime ? 'A befejezés a kezdés után legyen.' : null);
+    if (invalid || this.daysError() || this.timeError()) {
       this.form.markAllAsTouched();
       return;
     }
 
-    const repeatIntervalDays = v.repeat === 'once' ? null : v.repeat === 'custom' ? v.customDays : Number(v.repeat);
+    const repeatIntervalDays =
+      v.repeat === '1' || v.repeat === '2' ? Number(v.repeat) : v.repeat === 'custom' ? v.customDays : null;
+    const repeatWeekdays =
+      v.repeat === 'weekdays' ? WEEKDAYS_MASK
+      : v.repeat === 'weekend' ? WEEKEND_MASK
+      : v.repeat === 'days' ? daysToMask(v.days)
+      : null;
+    const recurring = repeatIntervalDays !== null || repeatWeekdays !== null;
+
     const req: TaskRequest = {
       title: v.title.trim(),
       description: v.description.trim() || null,
       categoryId: v.categoryId,
       startDate: toIsoDate(v.startDate!),
       dueTime: v.dueTime || null,
+      endTime: v.endTime || null,
       repeatIntervalDays,
-      endDate: repeatIntervalDays !== null && v.endDate ? toIsoDate(v.endDate) : null,
+      repeatWeekdays,
+      endDate: recurring && v.endDate ? toIsoDate(v.endDate) : null,
     };
 
     this.saving.set(true);
@@ -255,7 +329,7 @@ export class TaskDialog implements OnInit {
 
   remove(): void {
     const task = this.data.task!;
-    const message = task.repeatIntervalDays
+    const message = isRecurring(task)
       ? `A(z) „${task.title}” minden ismétlődése törlődik, a korábbi pipákkal együtt.`
       : `A(z) „${task.title}” véglegesen törlődik.`;
 
@@ -271,6 +345,16 @@ export class TaskDialog implements OnInit {
       });
     });
   }
+}
+
+function repeatModeOf(days: number | null, mask: number | null): RepeatMode {
+  if (mask === WEEKDAYS_MASK) return 'weekdays';
+  if (mask === WEEKEND_MASK) return 'weekend';
+  if (mask !== null) return 'days';
+  if (days === null) return 'once';
+  if (days === 1) return '1';
+  if (days === 2) return '2';
+  return 'custom';
 }
 
 /** Megnyitja a teendő-párbeszédablakot; a hívó a bezáráskor frissít. */

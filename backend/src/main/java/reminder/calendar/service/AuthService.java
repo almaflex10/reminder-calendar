@@ -2,9 +2,12 @@ package reminder.calendar.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import reminder.calendar.config.AppProperties;
 import reminder.calendar.dto.AuthResponse;
 import reminder.calendar.dto.LoginRequest;
 import reminder.calendar.dto.RegisterRequest;
@@ -30,8 +33,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final EmailService emailService;
 
-    @Value("${app.verification-token-validity-hours:24}")
-    private long tokenValidityHours;
+    private final AppProperties props;
 
     /**
      * Regisztráció: a felhasználó letiltva jön létre, és kap egy megerősítő e-mailt.
@@ -39,6 +41,9 @@ public class AuthService {
      */
     @Transactional
     public void register(RegisterRequest req) {
+        if (!props.registrationEnabled()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A regisztráció jelenleg ki van kapcsolva.");
+        }
         String email = normalizeEmail(req.email());
 
         if (userRepository.existsByUsername(req.username())) {
@@ -56,7 +61,7 @@ public class AuthService {
 
     /** A linkre kattintva aktiválja a fiókot. */
     @Transactional
-    public void verifyEmail(String token) {
+    public AuthResponse verifyEmail(String token) {
         VerificationToken vt = tokenRepository.findByToken(token)
                 .orElseThrow(() -> new BadRequestException("Érvénytelen vagy már felhasznált megerősítő link."));
 
@@ -67,6 +72,10 @@ public class AuthService {
         User user = vt.getUser();
         user.setEnabled(true);
         tokenRepository.deleteAllByUserId(user.getId());
+        return new AuthResponse(
+                jwtService.generateToken(user.getUsername()),
+                user.getUsername(),
+                jwtService.getValiditySeconds());
     }
 
     /**
@@ -100,8 +109,11 @@ public class AuthService {
 
     private void sendNewVerificationToken(User user) {
         tokenRepository.deleteAllByUserId(user.getId());
-        VerificationToken vt = tokenRepository.save(new VerificationToken(user, tokenValidityHours));
-        emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), vt.getToken());
+        if (!props.registrationEnabled()) {
+            VerificationToken vt = tokenRepository.save(new VerificationToken(user, props.verificationTokenValidityHours()));
+            emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), vt.getToken());
+        }
+
     }
 
     private static String normalizeEmail(String email) {

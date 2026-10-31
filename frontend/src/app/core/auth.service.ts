@@ -26,15 +26,7 @@ export class AuthService {
 
   login(username: string, password: string): Observable<void> {
     return this.http.post<AuthResponse>('/api/auth/login', { username, password }).pipe(
-      tap((res) => {
-        const session: Session = {
-          token: res.token,
-          username: res.username,
-          expiresAt: Date.now() + res.expiresInSeconds * 1000,
-        };
-        saveSession(session);
-        this.session.set(session);
-      }),
+      tap((res) => this.startSession(res)),
       map(() => undefined),
     );
   }
@@ -43,12 +35,26 @@ export class AuthService {
     return this.http.post<MessageResponse>('/api/auth/register', req);
   }
 
-  verify(token: string): Observable<MessageResponse> {
-    return this.http.get<MessageResponse>('/api/auth/verify', { params: { token } });
+  /** Megerősíti az e-mail címet, és egyben be is jelentkeztet. */
+  verify(token: string): Observable<void> {
+    return this.http.get<AuthResponse>('/api/auth/verify', { params: { token } }).pipe(
+      tap((res) => this.startSession(res)),
+      map(() => undefined),
+    );
   }
 
   resendVerification(email: string): Observable<MessageResponse> {
     return this.http.post<MessageResponse>('/api/auth/resend-verification', { email });
+  }
+
+  private startSession(res: AuthResponse): void {
+    const session: Session = {
+      token: res.token,
+      username: res.username,
+      expiresAt: Date.now() + res.expiresInSeconds * 1000,
+    };
+    saveSession(session);
+    this.session.set(session);
   }
 
   /** @param expired true, ha a token lejárt (az interceptor hívja 401-nél) */
