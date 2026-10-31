@@ -1,5 +1,6 @@
 package reminder.calendar.service;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -28,7 +29,11 @@ import java.time.Duration;
 @Service
 @RequiredArgsConstructor
 public class EmailService {
-
+    @PostConstruct
+    void logMailSettings() {
+        log.info("E-mail küldés: mód={}, feladó={}, Brevo kulcs megadva={}",
+                props.mail().mode(), props.mail().from(), !props.mail().brevoApiKey().isBlank());
+    }
     private static final URI BREVO_URL = URI.create("https://api.brevo.com/v3/smtp/email");
 
     private final ObjectProvider<JavaMailSender> mailSender;
