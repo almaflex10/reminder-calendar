@@ -1,7 +1,5 @@
 package reminder.calendar.dto;
 
-
-
 import reminder.calendar.entity.Category;
 import reminder.calendar.entity.Task;
 
@@ -15,14 +13,15 @@ public record TaskResponse(
         String description,
         LocalDate date,
         LocalTime dueTime,
+        LocalTime endTime,
         Integer repeatIntervalDays,
+        Integer repeatWeekdays,
         Long categoryId,
         String categoryName,
         String categoryColor,
-        Integer repeatWeekdays,
-        LocalTime endTime
+        boolean completed
 ) {
-    public static TaskResponse of(Task task, LocalDate date) {
+    public static TaskResponse of(Task task, LocalDate date, boolean completed) {
         Category c = task.getCategory();
         return new TaskResponse(
                 task.getId(),
@@ -30,12 +29,13 @@ public record TaskResponse(
                 task.getDescription(),
                 date,
                 task.getDueTime(),
+                task.getEndTime(),
                 task.getRepeatIntervalDays(),
+                task.getRepeatWeekdays(),
                 c != null ? c.getId() : null,
                 c != null ? c.getName() : null,
                 c != null ? c.getColor() : null,
-                task.getRepeatWeekdays(),
-                task.getEndTime()
+                completed
         );
     }
 }

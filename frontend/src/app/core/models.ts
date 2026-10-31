@@ -40,6 +40,8 @@ export interface DayTask {
   categoryColor: string | null;
   repeatWeekdays: number | null;
   endTime: string | null;
+    /** ki van-e már pipálva ezen a napon */
+  completed: boolean;
 }
 
 /** Egy teendő minden adata (GET /api/tasks/all, /api/tasks/{id}). */

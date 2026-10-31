@@ -65,6 +65,10 @@ export class CalendarPage implements OnInit {
 
   readonly summaries = signal(new Map<string, CalendarDay>());
   readonly dayTasks = signal<DayTask[]>([]);
+  readonly openTasks = computed(() => this.dayTasks().filter((t) => !t.completed));
+  readonly doneTasks = computed(() => this.dayTasks().filter((t) => t.completed));
+  /** a "Teljesítve" rész ki van-e nyitva */
+  readonly showDone = signal(true);
   readonly loadingMonth = signal(false);
   readonly loadingDay = signal(false);
   /** A pipálás alatt lévő teendők – hogy ne lehessen kétszer kattintani. */
@@ -164,7 +168,7 @@ export class CalendarPage implements OnInit {
     this.taskApi.complete(task.id, date).subscribe({
       next: () => {
         this.setBusy(task.id, false);
-        this.dayTasks.update((list) => list.filter((t) => t.id !== task.id));
+        this.markCompleted(task.id, true);
         this.loadMonth();
 
         this.snackBar
@@ -178,15 +182,28 @@ export class CalendarPage implements OnInit {
       },
     });
   }
+  /** A "Teljesítve" listában a pipa kivétele: visszakerül a nyitottak közé. */
+  uncomplete(task: DayTask): void {
+    this.setBusy(task.id, true);
+    this.undo(task, this.selectedIso());
+  }
 
   private undo(task: DayTask, date: string): void {
     this.taskApi.undoComplete(task.id, date).subscribe({
       next: () => {
+        this.setBusy(task.id, false);
+        if (date === this.selectedIso()) this.markCompleted(task.id, false);
         this.loadMonth();
-        if (date === this.selectedIso()) this.loadDay();
       },
-      error: (err) => this.snackBar.open(errorMessage(err), 'OK', { duration: 5000 }),
+      error: (err) => {
+        this.setBusy(task.id, false);
+        this.snackBar.open(errorMessage(err), 'OK', { duration: 5000 });
+      },
     });
+  }
+
+  private markCompleted(id: number, completed: boolean): void {
+    this.dayTasks.update((list) => list.map((t) => (t.id === id ? { ...t, completed } : t)));
   }
 
   newTask(): void {

@@ -34,17 +34,19 @@ public class TaskService {
 
     // ===================== Lekérdezés =====================
 
-    /** Az adott nap még el nem végzett teendői, időpont szerint (az időpont nélküliek a végén). */
+    /**
+     * Az adott nap összes teendője – a nyitottak és a már kipipáltak is (completed = true/false).
+     * Időpont szerint rendezve, az időpont nélküliek a végén.
+     */
     @Transactional(readOnly = true)
-    public List<TaskResponse> getOpenTasks(Long userId, LocalDate day) {
+    public List<TaskResponse> getTasksForDay(Long userId, LocalDate day) {
         Set<TaskCompletionId> done = new HashSet<>(completionRepository.findIdsInRange(userId, day, day));
 
         return taskRepository.findCandidatesInRange(userId, day, day).stream()
                 .filter(task -> task.isDueOn(day))
-                .filter(task -> !done.contains(new TaskCompletionId(task.getId(), day)))
                 .sorted(Comparator.comparing(Task::getDueTime, Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(Task::getTitle, String.CASE_INSENSITIVE_ORDER))
-                .map(task -> TaskResponse.of(task, day))
+                .map(task -> TaskResponse.of(task, day, done.contains(new TaskCompletionId(task.getId(), day))))
                 .toList();
     }
 

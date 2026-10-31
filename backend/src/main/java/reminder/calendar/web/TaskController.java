@@ -28,7 +28,7 @@ public class TaskController {
     @GetMapping
     public List<TaskResponse> openTasks(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return taskService.getOpenTasks(currentUser.getId(), dateOrToday(date));
+        return taskService.getTasksForDay(currentUser.getId(), dateOrToday(date));
     }
 
     /** POST /api/tasks/{id}/complete?date=2026-10-30 – teljesítés (alapból mára). */
