@@ -114,11 +114,8 @@ public class AuthService {
 
     private void sendNewVerificationToken(User user) {
         tokenRepository.deleteAllByUserId(user.getId());
-        if (!props.registrationEnabled()) {
-            VerificationToken vt = tokenRepository.save(new VerificationToken(user, props.verificationTokenValidityHours()));
-            emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), vt.getToken());
-        }
-
+        VerificationToken vt = tokenRepository.save(new VerificationToken(user, props.verificationTokenValidityHours()));
+        emailService.sendVerificationEmail(user.getEmail(), user.getUsername(), vt.getToken());
     }
 
     private static String normalizeEmail(String email) {
